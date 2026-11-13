@@ -76,7 +76,7 @@ envsubst < manifests/app/30-app.yaml | kubectl apply -f -
 ## Catatan global (berlaku di semua langkah)
 
 1. **Satu VPS, satu node.** Tidak ada HA. Semua `replicas: 1` — kalau node mati, semua mati. Itu trade-off yang disengaja untuk biaya.
-2. **Namespace = batas keamanan.** `ai-gateway` (gateway), `app` (aplikasi), `cattle-system`/`cert-manager` (platform). Jangan campur.
+2. **Namespace = batas keamanan.** `ai-gateway` (gateway), `app` (aplikasi), `cattle-system`/`cert-manager` (platform). Jangan campur. Kalau ganti nama `app`, ubah di **semua** manifest (`grep -rl 'namespace: app' manifests/`) **dan** di workflow (`-n app`). Nama lain = deploy CI masuk ke namespace kosong, rollout gagal.
 3. **Semua rahasia di Secret, tidak ada di YAML repo.** `.secrets.env` lokal (chmod 600) atau password manager. Repo publik hanya berisi placeholder `${...}`.
 4. **`envsubst` untuk placeholder.** Manifest memakai `${VPS_IP}`, `${APP_HOST}`, `${APP_HOST_DOTTED}`, `${ACME_EMAIL}`, `${GHCR_OWNER}`. Paket: `gettext` (`apt install gettext`). `APP_HOST_DOTTED` = `APP_HOST` dengan `.` di-escape (`app\.example\.com`) — dipakai regex redirect www; kalau lupa, middleware `redirect-www` tidak match.
 5. **`sslip.io` untuk tanpa domain.** `app.203.0.113.10.sslip.io` resolve ke IP itu. Let's Encrypt tetap bisa menerbitkan sertifikat.

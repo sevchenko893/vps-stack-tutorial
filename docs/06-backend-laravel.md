@@ -71,9 +71,15 @@ kubectl -n app create secret generic app-secrets \
 ## 6.3 Deploy
 
 ```bash
-kubectl -n app apply -f manifests/app/30-app.yaml   # api + web + ingress
+# GHCR_OWNER = username GitHub (huruf kecil), dipakai di nama image
+export GHCR_OWNER="username-github-kamu"
+export APP_HOST="app.example.com" APP_HOST_DOTTED='app\.example\.com'
+
+envsubst < manifests/app/30-app.yaml | kubectl apply -f -
 kubectl -n app rollout status deploy/api
 ```
+
+Tanpa `envsubst`, YAML akan berisi `${GHCR_OWNER}` literal dan pod berakhir `ImagePullBackOff`.
 
 Migrasi dijalankan saat container start, bukan saat build:
 
@@ -133,5 +139,9 @@ Ingress juga harus me-route `/up` ke api, bukan ke frontend.
 ```bash
 kubectl -n app logs deploy/api --tail=50
 kubectl -n app exec deploy/api -- php artisan migrate:status
+
+# /api/articles hanya contoh — ganti dengan route yang benar-benar kamu buat.
+# Laravel baru dari `composer create-project` belum punya route ini.
+curl -s https://$APP_HOST/up -o /dev/null -w '%{http_code}\n'
 curl -s https://$APP_HOST/api/articles | head -c 200
 ```
