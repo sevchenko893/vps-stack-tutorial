@@ -1,7 +1,8 @@
 # Laravel API + Nuxt SSR + Ingress. Prasyarat:
 #   secret app-secrets (APP_KEY, DB_PASSWORD)
 #   secret ghcr-pull (docker-registry, PAT read:packages)
-#   image sudah di-push: ghcr.io/<owner>/app-backend, ghcr.io/<owner>/app-frontend
+#   image sudah di-push: ghcr.io/${GHCR_OWNER}/app-backend, ghcr.io/${GHCR_OWNER}/app-frontend
+#   GHCR_OWNER = username/org GitHub pemilik package (huruf kecil)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,7 +19,7 @@ spec:
       imagePullSecrets: [{name: ghcr-pull}]
       containers:
         - name: api
-          image: ghcr.io/OWNER/app-backend:latest
+          image: ghcr.io/${GHCR_OWNER}/app-backend:latest
           ports:
             - {containerPort: 8000}
           env:
@@ -94,7 +95,7 @@ spec:
           hostnames: [${APP_HOST}, www.${APP_HOST}]
       containers:
         - name: web
-          image: ghcr.io/OWNER/app-frontend:latest
+          image: ghcr.io/${GHCR_OWNER}/app-frontend:latest
           ports:
             - {containerPort: 3000}
           env:

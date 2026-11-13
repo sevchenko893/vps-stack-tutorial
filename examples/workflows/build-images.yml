@@ -58,6 +58,7 @@ jobs:
         env:
           HOST: ${{ vars.PUBLIC_HOST }}
           NODE_IP: ${{ vars.NODE_IP }}
+          SMOKE_PATH: ${{ vars.SMOKE_PATH }}
         run: |
           set -euo pipefail
           RESOLVE="--resolve $HOST:443:$NODE_IP"
@@ -72,10 +73,10 @@ jobs:
           }
           check /up
           check /
-          check /api/articles
-          body=$(curl -sk --max-time 25 $RESOLVE "https://$HOST/api/articles")
-          echo "${body:0:200}"
-          case "$body" in
-            '{"data":'*) ;;
-            *) echo "API /api/articles unexpected payload"; exit 1 ;;
-          esac
+          # Cek endpoint API milikmu sendiri: set repo variable SMOKE_PATH (mis. /api/articles).
+          # Jangan hardcode di sini — project Laravel baru belum punya endpoint itu.
+          if [ -n "${SMOKE_PATH:-}" ]; then
+            check "$SMOKE_PATH"
+            body=$(curl -sk --max-time 25 $RESOLVE "https://$HOST$SMOKE_PATH")
+            echo "${body:0:200}"
+          fi

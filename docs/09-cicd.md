@@ -59,12 +59,16 @@ loginctl show-user $USER | grep Linger     # harus Linger=yes
 | `PUBLIC_URL` | `https://app.example.com` | build-arg `NUXT_PUBLIC_API_BASE` |
 | `PUBLIC_HOST` | `app.example.com` | smoke test `--resolve` |
 | `NODE_IP` | `10.20.0.38` | IP node untuk `--resolve` |
+| `SMOKE_PATH` | `/api/articles` | endpoint API yang dicek; **kosongkan** kalau belum punya |
 
 ```bash
 gh variable set PUBLIC_URL  --body "https://app.example.com" -R <owner>/<repo>
 gh variable set PUBLIC_HOST --body "app.example.com"          -R <owner>/<repo>
 gh variable set NODE_IP     --body "10.20.0.38"               -R <owner>/<repo>
+gh variable set SMOKE_PATH  --body "/api/articles"            -R <owner>/<repo>
 ```
+
+`SMOKE_PATH` sengaja tidak di-hardcode di workflow: project Laravel yang baru di-scaffold belum punya `/api/articles`. Kalau kosong, step itu dilewati — `/up` dan `/` tetap dicek.
 
 ## 9.5 Secret & pull secret GHCR
 
@@ -97,8 +101,10 @@ check() {
   echo "$1 returned $code"; return 1
 }
 check /up
-check /api/articles
+check /api/articles    # GANTI dengan route yang benar-benar ada di aplikasimu
 ```
+
+**Sesuaikan `check /api/articles`** dengan endpoint nyata di aplikasimu. Kalau route itu tidak ada, job gagal 404 padahal deploy sukses — dan itu bukan bug CI, itu bug ekspektasi test.
 
 Tiga jebakan yang sudah ditangani di snippet itu:
 - **cold start SSR** bisa >10 s -> retry 24x5 s.

@@ -51,6 +51,7 @@ export VPS_IP="203.0.113.10"
 export APP_HOST="app.example.com"          # atau app.${VPS_IP}.sslip.io
 export APP_HOST_DOTTED='app\.example\.com'
 export ACME_EMAIL="you@example.com"
+export GHCR_OWNER="username-github-kamu"   # huruf kecil, pemilik package GHCR
 export DB_PASS="$(openssl rand -base64 24 | tr -d '/+=' | head -c 24)"
 export ROUTER_KEY="sk-9router-..."
 
@@ -77,7 +78,7 @@ envsubst < manifests/app/30-app.yaml | kubectl apply -f -
 1. **Satu VPS, satu node.** Tidak ada HA. Semua `replicas: 1` — kalau node mati, semua mati. Itu trade-off yang disengaja untuk biaya.
 2. **Namespace = batas keamanan.** `ai-gateway` (gateway), `app` (aplikasi), `cattle-system`/`cert-manager` (platform). Jangan campur.
 3. **Semua rahasia di Secret, tidak ada di YAML repo.** `.secrets.env` lokal (chmod 600) atau password manager. Repo publik hanya berisi placeholder `${...}`.
-4. **`envsubst` untuk placeholder.** Manifest di repo ini memakai `${VPS_IP}`, `${APP_HOST}`, `${APP_HOST_DOTTED}`, `${ACME_EMAIL}`. Paket: `gettext`.
+4. **`envsubst` untuk placeholder.** Manifest memakai `${VPS_IP}`, `${APP_HOST}`, `${APP_HOST_DOTTED}`, `${ACME_EMAIL}`, `${GHCR_OWNER}`. Paket: `gettext` (`apt install gettext`). `APP_HOST_DOTTED` = `APP_HOST` dengan `.` di-escape (`app\.example\.com`) — dipakai regex redirect www; kalau lupa, middleware `redirect-www` tidak match.
 5. **`sslip.io` untuk tanpa domain.** `app.203.0.113.10.sslip.io` resolve ke IP itu. Let's Encrypt tetap bisa menerbitkan sertifikat.
 6. **Traefik adalah satu-satunya pintu masuk.** Tidak ada nginx di host. Semua expose lewat Ingress.
 7. **`kubectl` dijalankan di VPS.** k3s API hanya `127.0.0.1:6443`; dari laptop pakai SSH tunnel:

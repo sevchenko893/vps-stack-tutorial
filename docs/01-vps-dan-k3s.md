@@ -4,7 +4,7 @@
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y git curl ca-certificates ufw
+sudo apt install -y git curl ca-certificates ufw gettext   # gettext = envsubst, dipakai semua manifest gettext   # gettext = envsubst
 ```
 
 ## 1.2 Swap (wajib kalau RAM 8 GB)

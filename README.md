@@ -45,6 +45,7 @@ Referensi nyata: stack ini dipakai untuk [kabarecing.com](https://kabarecing.com
 | 17 | [docs/17-local-dev.md](docs/17-local-dev.md) | Ngoding di laptop, beda env lokal vs cluster |
 | 18 | [docs/18-skalabilitas.md](docs/18-skalabilitas.md) | Naik replika, Redis, multi-node, kapan pindah managed |
 | 10 | [docs/10-troubleshooting.md](docs/10-troubleshooting.md) | seccomp/kill(2), NAT hairpin, SIGPIPE curl, cold start |
+| 19 | [docs/19-verifikasi.md](docs/19-verifikasi.md) | **Checklist "tahap ini berhasil" + 8 titik gagal tersering + apa yang kamu isi sendiri** |
 
 ## Prasyarat
 
@@ -76,6 +77,12 @@ scripts/                  helper idempoten
 ## Jalur cepat (kalau sudah paham)
 
 ```bash
+export VPS_IP="203.0.113.10"
+export APP_HOST="app.example.com"          # atau app.${VPS_IP}.sslip.io
+export APP_HOST_DOTTED='app\.example\.com'
+export ACME_EMAIL="you@example.com"
+export GHCR_OWNER="username-github-kamu"   # huruf kecil
+
 bash scripts/install-k3s.sh
 bash scripts/install-cert-manager.sh
 VPS_IP=$VPS_IP bash scripts/install-rancher.sh
@@ -87,6 +94,6 @@ envsubst < manifests/app/10-postgres.yaml | kubectl apply -f -
 envsubst < manifests/app/30-app.yaml | kubectl apply -f -
 ```
 
-`envsubst` (paket `gettext`) mengganti `${VPS_IP}`, `${APP_HOST}`, `${APP_HOST_DOTTED}`, `${ACME_EMAIL}` di manifest.
+`envsubst` (paket `gettext`) mengganti `${VPS_IP}`, `${APP_HOST}`, `${APP_HOST_DOTTED}`, `${ACME_EMAIL}`, `${GHCR_OWNER}` di manifest. `GHCR_OWNER` = username GitHub pemilik package (huruf kecil).
 
 Sisanya (secret, image, CI/CD) ada di docs — jangan dilewat, urutannya penting.

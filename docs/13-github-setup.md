@@ -72,6 +72,7 @@ Kalau dibuat publik, `imagePullSecrets` tidak lagi wajib (tapi aman dibiarkan).
 | `PUBLIC_URL` | `https://app.example.com` |
 | `PUBLIC_HOST` | `app.example.com` |
 | `NODE_IP` | `10.20.0.38` |
+| `SMOKE_PATH` | `/api/articles` (opsional) |
 
 ```bash
 gh variable set PUBLIC_URL  --body "https://app.example.com" -R <owner>/<repo>

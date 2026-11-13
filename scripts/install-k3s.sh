@@ -7,7 +7,7 @@ K3S_VERSION="${K3S_VERSION:-v1.31.2+k3s1}"
 if command -v k3s >/dev/null 2>&1; then
   echo "k3s sudah terpasang: $(k3s --version | head -1)"
 else
-  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--write-kubeconfig-mode=644" \
+  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --write-kubeconfig-mode=644" \
     INSTALL_K3S_VERSION="$K3S_VERSION" sh -
 fi
 
