@@ -30,6 +30,50 @@ Untuk pengembangan lokal tanpa cluster:
 php artisan serve --host=0.0.0.0 --port=8000
 ```
 
+## 6.0 Scaffold project dari nol
+
+```bash
+composer create-project laravel/laravel backend
+cd backend
+
+# API-only + token auth
+php artisan install:api          # bikin routes/api.php, pasang Sanctum
+
+# Postgres lokal untuk development
+php artisan migrate
+```
+
+`.env` lokal:
+
+```dotenv
+APP_URL=http://127.0.0.1:8000
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=app
+DB_USERNAME=app
+DB_PASSWORD=secret
+FRONTEND_ORIGINS=http://127.0.0.1:3000
+```
+
+Contoh endpoint pertama:
+
+```bash
+php artisan make:model Article -mcr
+```
+
+```php
+// routes/api.php
+Route::get('/articles', [ArticleController::class, 'index']);
+```
+
+```bash
+php artisan serve --port=8000
+curl -s http://127.0.0.1:8000/api/articles
+```
+
+Cek `bootstrap/app.php` — Laravel 11+ mendaftarkan `api: __DIR__.'/../routes/api.php'` dan health route `/up` di situ.
+
 ## 6.1 Dockerfile
 
 [backend/Dockerfile](../manifests/Dockerfile.backend) — dua stage:
