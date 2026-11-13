@@ -1,0 +1,66 @@
+# Postgres 16. Prasyarat: secret pg-secrets (POSTGRES_DB/USER/PASSWORD).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pg-data
+  namespace: app
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: app
+spec:
+  replicas: 1
+  # RWO volume: rollout harus mati dulu sebelum pod baru mount volume yang sama.
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: postgres}
+  template:
+    metadata:
+      labels: {app: postgres}
+    spec:
+      # Node dengan seccomp RuntimeDefault memblokir kill(2) -> gosu/postgres hang.
+      # Unconfined sampai profil seccomp node diperbaiki. Namespace internal, 1 replika.
+      securityContext:
+        seccompProfile: {type: Unconfined}
+        appArmorProfile: {type: Unconfined}
+      containers:
+        - name: postgres
+          image: postgres:16
+          envFrom:
+            - secretRef: {name: pg-secrets}
+          env:
+            # Subdirektori: root volume berisi lost+found, initdb menolak direktori tidak kosong.
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata-v2}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/postgresql/data}
+          readinessProbe:
+            exec:
+              command: ["bash", "-c", "pg_isready -h 127.0.0.1 -U $POSTGRES_USER -d $POSTGRES_DB"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 1Gi}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pg-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: app
+spec:
+  selector: {app: postgres}
+  ports:
+    - {port: 5432, targetPort: 5432}

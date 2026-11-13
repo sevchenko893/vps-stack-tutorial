@@ -1,0 +1,199 @@
+# Laravel API + Nuxt SSR + Ingress. Prasyarat:
+#   secret app-secrets (APP_KEY, DB_PASSWORD)
+#   secret ghcr-pull (docker-registry, PAT read:packages)
+#   image sudah di-push: ghcr.io/<owner>/app-backend, ghcr.io/<owner>/app-frontend
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: api}
+  template:
+    metadata:
+      labels: {app: api}
+    spec:
+      imagePullSecrets: [{name: ghcr-pull}]
+      containers:
+        - name: api
+          image: ghcr.io/OWNER/app-backend:latest
+          ports:
+            - {containerPort: 8000}
+          env:
+            - {name: APP_NAME, value: App}
+            - {name: APP_ENV, value: production}
+            - {name: APP_DEBUG, value: "false"}
+            - {name: APP_URL, value: "https://${APP_HOST}"}
+            - name: APP_KEY
+              valueFrom: {secretKeyRef: {name: app-secrets, key: APP_KEY}}
+            # Log ke stderr -> masuk kubectl logs.
+            - {name: LOG_CHANNEL, value: stderr}
+            - {name: DB_CONNECTION, value: pgsql}
+            - {name: DB_HOST, value: postgres}
+            - {name: DB_PORT, value: "5432"}
+            - {name: DB_DATABASE, value: app}
+            - {name: DB_USERNAME, value: app}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: app-secrets, key: DB_PASSWORD}}
+            - {name: SESSION_DRIVER, value: database}
+            - {name: CACHE_STORE, value: database}
+            - {name: QUEUE_CONNECTION, value: database}
+            - {name: SESSION_DOMAIN, value: ".${APP_HOST}"}
+            - {name: SESSION_SECURE_COOKIE, value: "true"}
+            - {name: SANCTUM_STATEFUL_DOMAINS, value: "${APP_HOST},www.${APP_HOST}"}
+            - {name: FRONTEND_ORIGINS, value: "https://${APP_HOST},https://www.${APP_HOST}"}
+            - {name: TRUSTED_PROXIES, value: "*"}
+          # migrate/seed di runtime (env tersedia), lalu serve. exec -> SIGTERM sampai ke php.
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              php artisan migrate --force
+              php artisan db:seed --force || true
+              php artisan config:cache
+              php artisan route:cache
+              exec php artisan serve --host=0.0.0.0 --port=8000
+          readinessProbe:
+            httpGet: {path: /up, port: 8000}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 1Gi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: app
+spec:
+  selector: {app: api}
+  ports:
+    - {port: 8000, targetPort: 8000}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: web}
+  template:
+    metadata:
+      labels: {app: web}
+    spec:
+      imagePullSecrets: [{name: ghcr-pull}]
+      # Tanpa NAT hairpin, SSR fetch ke hostname publik gagal. Arahkan ke ClusterIP traefik.
+      hostAliases:
+        - ip: 10.43.4.137
+          hostnames: [${APP_HOST}, www.${APP_HOST}]
+      containers:
+        - name: web
+          image: ghcr.io/OWNER/app-frontend:latest
+          ports:
+            - {containerPort: 3000}
+          env:
+            - {name: NUXT_PUBLIC_API_BASE, value: "https://${APP_HOST}"}
+            - {name: NITRO_PORT, value: "3000"}
+          readinessProbe:
+            httpGet: {path: /, port: 3000}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 1Gi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  namespace: app
+spec:
+  selector: {app: web}
+  ports:
+    - {port: 3000, targetPort: 3000}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app
+  namespace: app
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: ${APP_HOST}
+      http:
+        paths:
+          # /sanctum wajib ke api, kalau tidak csrf-cookie ditangkap Nuxt -> login SPA 404.
+          - {path: /api, pathType: Prefix, backend: {service: {name: api, port: {number: 8000}}}}
+          - {path: /sanctum, pathType: Prefix, backend: {service: {name: api, port: {number: 8000}}}}
+          - {path: /up, pathType: Prefix, backend: {service: {name: api, port: {number: 8000}}}}
+          - {path: /, pathType: Prefix, backend: {service: {name: web, port: {number: 3000}}}}
+  tls:
+    - hosts: [${APP_HOST}, www.${APP_HOST}]
+      secretName: app-tls
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: app
+spec:
+  redirectScheme: {scheme: https, permanent: true}
+---
+# Ingress terpisah supaya middleware redirect tidak ikut ke router HTTPS.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-http
+  namespace: app
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.middlewares: app-redirect-https@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: ${APP_HOST}
+      http:
+        paths:
+          - {path: /, pathType: Prefix, backend: {service: {name: web, port: {number: 3000}}}}
+    - host: www.${APP_HOST}
+      http:
+        paths:
+          - {path: /, pathType: Prefix, backend: {service: {name: web, port: {number: 3000}}}}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-www
+  namespace: app
+spec:
+  redirectRegex:
+    regex: ^https?://www\.${APP_HOST_DOTTED}/(.*)
+    replacement: https://${APP_HOST}/$1
+    permanent: true
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-www
+  namespace: app
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: app-redirect-www@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: www.${APP_HOST}
+      http:
+        paths:
+          - {path: /, pathType: Prefix, backend: {service: {name: web, port: {number: 3000}}}}
+  tls:
+    - hosts: [www.${APP_HOST}]
+      secretName: app-tls

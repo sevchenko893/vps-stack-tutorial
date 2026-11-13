@@ -1,0 +1,81 @@
+name: Build, publish and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+# Deploy tidak boleh saling menimpa.
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: backend
+            context: backend
+          - name: frontend
+            context: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          # sha = immutable (rollback gampang), latest = debug manual.
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/app-${{ matrix.name }}:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/app-${{ matrix.name }}:latest
+          build-args: |
+            NUXT_PUBLIC_API_BASE=${{ vars.PUBLIC_URL }}
+
+  deploy:
+    needs: build
+    # Runner self-hosted di VPS: k3s API hanya 127.0.0.1, jadi pull-based deploy.
+    runs-on: [self-hosted, app]
+    steps:
+      - name: Roll out new images
+        run: |
+          set -euo pipefail
+          kubectl -n app set image deploy/api api=ghcr.io/${{ github.repository_owner }}/app-backend:${{ github.sha }}
+          kubectl -n app set image deploy/web web=ghcr.io/${{ github.repository_owner }}/app-frontend:${{ github.sha }}
+          kubectl -n app rollout status deploy/api --timeout=300s
+          kubectl -n app rollout status deploy/web --timeout=300s
+      - name: Smoke test
+        env:
+          HOST: ${{ vars.PUBLIC_HOST }}
+          NODE_IP: ${{ vars.NODE_IP }}
+        run: |
+          set -euo pipefail
+          RESOLVE="--resolve $HOST:443:$NODE_IP"
+          # Cold start SSR bisa >10s -> retry. Jangan pipe curl ke head (SIGPIPE -> exit 23).
+          check() {
+            for i in $(seq 1 24); do
+              code=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 25 $RESOLVE "https://$HOST$1" || true)
+              [ "$code" = "200" ] && return 0
+              sleep 5
+            done
+            echo "$1 returned $code"; return 1
+          }
+          check /up
+          check /
+          check /api/articles
+          body=$(curl -sk --max-time 25 $RESOLVE "https://$HOST/api/articles")
+          echo "${body:0:200}"
+          case "$body" in
+            '{"data":'*) ;;
+            *) echo "API /api/articles unexpected payload"; exit 1 ;;
+          esac

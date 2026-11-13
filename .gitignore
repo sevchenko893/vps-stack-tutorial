@@ -1,0 +1,4 @@
+*.sqlite
+*.sql.gz
+.env
+.secrets.env

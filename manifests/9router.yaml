@@ -1,0 +1,89 @@
+# 9Router AI gateway. Prasyarat:
+#   kubectl create ns ai-gateway
+#   kubectl -n ai-gateway create secret generic 9router-credentials \
+#     --from-literal=initial-password=... --from-literal=jwt-secret=... --from-literal=api-key-secret=...
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: router-pvc
+  namespace: ai-gateway
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: 9router
+  namespace: ai-gateway
+  labels: {app: 9router}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: 9router}
+  template:
+    metadata:
+      labels: {app: 9router}
+    spec:
+      containers:
+        - name: 9router
+          image: decolua/9router:0.5.112
+          env:
+            - {name: PORT, value: "20128"}
+            - {name: HOSTNAME, value: "0.0.0.0"}
+            - {name: DATA_DIR, value: /app/data}
+            - {name: AUTH_COOKIE_SECURE, value: "true"}
+            - name: INITIAL_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: 9router-credentials, key: initial-password}
+          ports:
+            - {name: http, containerPort: 20128, protocol: TCP}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          volumeMounts:
+            - {name: router-data, mountPath: /app/data}
+          readinessProbe:
+            httpGet: {path: /, port: http}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /, port: http}
+            initialDelaySeconds: 45
+            periodSeconds: 20
+      volumes:
+        - name: router-data
+          persistentVolumeClaim:
+            claimName: router-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: router-service
+  namespace: ai-gateway
+spec:
+  type: ClusterIP
+  selector: {app: 9router}
+  ports:
+    - {name: http, port: 20128, targetPort: http, protocol: TCP}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: router-ingress
+  namespace: ai-gateway
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts: [router.${VPS_IP}.sslip.io]
+      secretName: router-ingress-tls
+  rules:
+    - host: router.${VPS_IP}.sslip.io
+      http:
+        paths:
+          - {path: /, pathType: Prefix, backend: {service: {name: router-service, port: {number: 20128}}}}
