@@ -75,7 +75,7 @@ sqlite3 /tmp/9r.sqlite "select name, key from apiKeys;"
 Service internal: `http://router-service.ai-gateway.svc.cluster.local:20128`. API key disimpan di secret, bukan di env polos:
 
 ```bash
-kubectl -n app create secret generic router-key --from-literal=key='sk-9router-xxxx'
+kubectl -n app create secret generic router-key --from-literal=key="${ROUTER_KEY}"
 ```
 
 ```yaml
