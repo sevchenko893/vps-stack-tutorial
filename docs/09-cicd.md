@@ -119,6 +119,30 @@ kubectl -n app rollout undo deploy/api
 kubectl -n app set image deploy/api api=ghcr.io/<owner>/<app>-backend:<sha-lama>
 ```
 
-## 9.8 Update manifest dari CI (opsional)
+## 9.8 Jebakan: `apply` manifest menimpa tag image hasil CI
+
+`kubectl set image` mengubah tag jadi `:<sha>`. Tapi `30-app.yaml` di repo masih berisi `:latest`, jadi
+`kubectl apply -f 30-app.yaml` **mengembalikan** tag ke `:latest` — dan `:latest` di GHCR belum tentu commit
+terbaru (atau tertinggal karena push gagal). Gejala: fitur yang baru di-deploy tiba-tiba hilang setelah
+seseorang apply manifest untuk mengubah env.
+
+Urutan aman saat mengubah env di manifest:
+
+```bash
+kubectl apply -f 30-app.yaml                    # env berubah, tag ikut turun ke :latest
+SHA=$(git -C ~/repo rev-parse HEAD)
+kubectl -n app set image deploy/web web=ghcr.io/<owner>/app-frontend:$SHA
+kubectl -n app set image deploy/api api=ghcr.io/<owner>/app-backend:$SHA
+kubectl -n app rollout status deploy/web --timeout=300s
+```
+
+Atau lebih baik: jangan simpan `:latest` di manifest — pakai tag sha terakhir yang diketahui, dan biarkan CI
+yang memutakhirkannya. Verifikasi selalu:
+
+```bash
+kubectl -n app get deploy -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.template.spec.containers[0].image}{"\n"}{end}'
+```
+
+## 9.9 Update manifest dari CI (opsional)
 
 Kalau ingin `git` jadi sumber kebenaran tag image, tambahkan step `sed`/`yq` yang mengganti tag di `30-app.yaml` lalu commit balik. Untuk satu VPS, `kubectl set image` lebih sedikit moving parts — tidak ada commit loop.
