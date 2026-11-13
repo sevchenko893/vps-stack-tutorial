@@ -7,13 +7,35 @@
 ```bash
 kubectl create namespace ai-gateway
 
+# tulis password ke file TANPA newline, simpan sendiri (chmod 600) untuk login UI
+python3 -c 'import secrets;open("9router-pw","w").write(secrets.token_urlsafe(18))'
+chmod 600 9router-pw
+
 kubectl -n ai-gateway create secret generic 9router-credentials \
-  --from-literal=initial-password="$(openssl rand -base64 24)" \
+  --from-file=initial-password=9router-pw \
   --from-literal=jwt-secret="$(openssl rand -base64 32)" \
   --from-literal=api-key-secret="$(openssl rand -base64 32)"
+
+# buktikan byte-nya identik
+kubectl -n ai-gateway get secret 9router-credentials \
+  -o jsonpath='{.data.initial-password}' | base64 -d | cmp - 9router-pw && echo IDENTICAL
 ```
 
 Secret harus ada **sebelum** Deployment, kalau tidak pod `CreateContainerConfigError`.
+
+**Jebakan newline:** `kubectl create secret ... --from-file=initial-password=file` menyalin file **termasuk**
+newline di akhir. Aplikasi menerima `<password>\n` dan setiap login dengan password yang benar ditolak. Tulis file
+tanpa newline (`python3 -c 'open("pw","w").write(pw)'`, bukan `print(pw)`), lalu verifikasi byte-nya:
+
+```bash
+kubectl -n ai-gateway get secret 9router-credentials \
+  -o jsonpath='{.data.initial-password}' | base64 -d > /tmp/sec_pw
+cmp /tmp/sec_pw <file-password> && echo IDENTICAL; rm -f /tmp/sec_pw
+```
+
+Jangan verifikasi pakai `sha256sum file` vs `printenv | tr -d '\n' | sha256sum` — `tr` menghapus persis newline
+yang jadi biang masalah, jadi hasilnya selalu "cocok". `cmp` terhadap Secret ter-decode adalah satu-satunya cek yang
+tidak bisa bohong.
 
 ## 4.2 Deploy
 

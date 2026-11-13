@@ -113,6 +113,16 @@ command:
 | `FRONTEND_ORIGINS` | `https://example.com,...` | Dipakai `config/cors.php` (`allowed_origins`). |
 | `TRUSTED_PROXIES` | `*` | Di belakang Traefik; tanpa ini Laravel melihat IP internal dan `https` salah terdeteksi. |
 
+**Test auth jangan pakai curl polos.** Sanctum hanya menganggap request stateful kalau `Origin`/`Referer` cocok
+dengan `SANCTUM_STATEFUL_DOMAINS`. Tanpa header itu, session valid pun dibalas `Unauthenticated`:
+
+```bash
+curl -s -c /tmp/cj https://$APP_HOST/sanctum/csrf-cookie -o /dev/null
+TOKEN=$(grep XSRF-TOKEN /tmp/cj | awk '{print $7}' | python3 -c 'import sys,urllib.parse;print(urllib.parse.unquote(sys.stdin.read().strip()))')
+curl -s -b /tmp/cj -H "X-XSRF-TOKEN: $TOKEN" -H "Referer: https://$APP_HOST/" \
+  https://$APP_HOST/api/user
+```
+
 `config/cors.php`:
 
 ```php

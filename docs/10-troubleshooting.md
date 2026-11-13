@@ -8,6 +8,14 @@ Semua di bawah ini benar-benar terjadi saat membangun stack ini.
 
 **Sebab:** node dengan profil seccomp `RuntimeDefault` menolak syscall `kill(2)` untuk proses di dalam container. `gosu` (dipakai image postgres) memanggil `kill()` untuk memastikan child process.
 
+**Repro minimal** (buktikan dulu, jangan menebak):
+
+```bash
+kubectl run sigtest --rm -it --image=busybox:1.36 -- sh -c 'sleep 30 & P=$!; kill $P && echo kill-ok'
+```
+
+`sh: can't kill pid N: Permission denied` = terkonfirmasi profil seccomp node.
+
 **Fix** — Unconfined per pod:
 
 ```yaml
@@ -62,7 +70,18 @@ Pod/VM tidak bisa mengakses IP publik miliknya sendiri. Gejala: `Connection refu
 
 - Untuk test: `curl -sk --resolve example.com:443:10.20.0.38 https://example.com/up`
 - Untuk SSR Nuxt: `hostAliases` -> ClusterIP Traefik.
-- Untuk cert-manager HTTP-01 self-check: `hostAliases` sama, kalau issuer gagal validasi dari dalam cluster.
+- Untuk cert-manager HTTP-01 self-check: `hostAliases` sama, kalau issuer gagal validasi dari dalam cluster:
+
+```bash
+kubectl patch deploy cert-manager -n cert-manager --type=merge \
+  -p '{"spec":{"template":{"spec":{"hostAliases":[{"ip":"<node-ip>","hostnames":["<host>"]}]}}}}'
+```
+
+  **Hati-hati:** `--type=merge` **mengganti seluruh array** `hostAliases`. Baca dulu nilai sekarang
+  (`-o jsonpath='{.spec.template.spec.hostAliases}'`) dan sertakan semua hostname lama + baru, kalau tidak
+  sertifikat lain yang tadinya sehat ikut gagal self-check. Setelah patch, hapus `Challenge` → `Order` →
+  `Certificate` (urutan itu) supaya penerbitan ulang. Sebelum menghapus `Certificate`, cek
+  `kubectl get certificate -A`: kalau sertifikat lain juga macet, masalahnya di issuer/CRD, bukan di Ingress ini.
 
 ## SSR `fetch failed` padahal API sehat
 
