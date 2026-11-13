@@ -38,12 +38,18 @@ Buka `https://router.${VPS_IP}.sslip.io`, login dengan password itu. Di UI: tamb
 
 ## 4.4 Pakai dari luar
 
+Ambil API key dari UI (menu API Keys) atau SQLite di 4.5, simpan ke shell:
+
+```bash
+export ROUTER_KEY="sk-9router-..."
+```
+
 ```bash
 curl https://router.${VPS_IP}.sslip.io/v1/models \
-  -H "Authorization: Bearer sk-9router-xxxx"
+  -H "Authorization: Bearer ${ROUTER_KEY}"
 
 curl https://router.${VPS_IP}.sslip.io/v1/chat/completions \
-  -H "Authorization: Bearer sk-9router-xxxx" \
+  -H "Authorization: Bearer ${ROUTER_KEY}" \
   -H 'Content-Type: application/json' \
   -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"halo"}]}'
 ```

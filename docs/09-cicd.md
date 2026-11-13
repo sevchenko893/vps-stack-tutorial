@@ -14,7 +14,10 @@ k3s API di VPS ini hanya listen `127.0.0.1:6443`. Runner GitHub-hosted tidak bis
 
 ## 9.2 Workflow
 
-Lihat [.github/workflows/build-images.yml](../.github/workflows/build-images.yml). Poin penting:
+Workflow contoh: [examples/workflows/build-images.yml](../examples/workflows/build-images.yml).
+**Copy ke repo aplikasi** (`.github/workflows/build-images.yml`) — bukan di repo tutorial ini, karena `context: backend` / `context: frontend` harus ada di repo yang sama.
+
+Poin penting:
 
 | Bagian | Alasan |
 |---|---|

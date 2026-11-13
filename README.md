@@ -57,7 +57,7 @@ manifests/                YAML siap `kubectl apply -f`
   clusterissuer-letsencrypt.yaml
   app/10-postgres.yaml
   app/30-app.yaml
-.github/workflows/        pipeline build + deploy
+examples/workflows/       build-images.yml — copy ke repo aplikasi kamu
 scripts/                  helper idempoten
 ```
 
