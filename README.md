@@ -26,26 +26,30 @@ Referensi nyata: stack ini dipakai untuk [kabarecing.com](https://kabarecing.com
 
 | # | Dokumen | Isi |
 |---|---------|-----|
-| 0 | [docs/00-urutan-instalasi.md](docs/00-urutan-instalasi.md) | **Urutan install + catatan global** |
-| 1 | [docs/01-vps-dan-k3s.md](docs/01-vps-dan-k3s.md) | Siapkan VPS, swap, firewall, install k3s, kubeconfig |
-| 2 | [docs/02-cert-manager.md](docs/02-cert-manager.md) | cert-manager + ClusterIssuer Let's Encrypt |
-| 3 | [docs/03-rancher.md](docs/03-rancher.md) | Install Rancher (Helm), login, tuning resource |
-| 4 | [docs/04-9router.md](docs/04-9router.md) | Deploy 9Router (AI gateway) + PVC + API key |
-| 5 | [docs/05-postgres.md](docs/05-postgres.md) | Postgres 16 di cluster + PVC + probe |
-| 6 | [docs/06-backend-laravel.md](docs/06-backend-laravel.md) | Laravel 12 API: Dockerfile, env, migrate saat start |
-| 7 | [docs/07-frontend-nuxt.md](docs/07-frontend-nuxt.md) | Nuxt 3 SSR: Dockerfile, runtime config, SSR ke API |
-| 8 | [docs/08-ingress-tls.md](docs/08-ingress-tls.md) | Ingress path-split, TLS, redirect http->https & www |
-| 9 | [docs/09-cicd.md](docs/09-cicd.md) | GitHub Actions + self-hosted runner + GHCR + smoke test |
-| 11 | [docs/11-cheatsheet.md](docs/11-cheatsheet.md) | Perintah harian: logs, rollout, backup, rollback |
-| 12 | [docs/12-domain-dns.md](docs/12-domain-dns.md) | Domain sendiri, DNS record, Cloudflare, pindah dari sslip.io |
-| 13 | [docs/13-github-setup.md](docs/13-github-setup.md) | Repo, GHCR, PAT, repo variables, branch protection |
-| 14 | [docs/14-monitoring.md](docs/14-monitoring.md) | metrics-server, health check script, uptime, log |
-| 15 | [docs/15-security-hardening.md](docs/15-security-hardening.md) | SSH, ufw, RBAC, secret, image, scan |
-| 16 | [docs/16-backup-restore.md](docs/16-backup-restore.md) | Backup harian + drill restore + rencana bencana |
-| 17 | [docs/17-local-dev.md](docs/17-local-dev.md) | Ngoding di laptop, beda env lokal vs cluster |
-| 18 | [docs/18-skalabilitas.md](docs/18-skalabilitas.md) | Naik replika, Redis, multi-node, kapan pindah managed |
-| 10 | [docs/10-troubleshooting.md](docs/10-troubleshooting.md) | seccomp/kill(2), NAT hairpin, SIGPIPE curl, cold start |
-| 19 | [docs/19-verifikasi.md](docs/19-verifikasi.md) | **Checklist "tahap ini berhasil" + 8 titik gagal tersering + apa yang kamu isi sendiri** |
+| 0 | [00-urutan-instalasi](docs/00-urutan-instalasi.md) | **Urutan install 1-15 + alasan + 12 catatan global** |
+| 1 | [01-vps-dan-k3s](docs/01-vps-dan-k3s.md) | VPS, swap, firewall, k3s, kubeconfig |
+| 2 | [02-cert-manager](docs/02-cert-manager.md) | cert-manager + ClusterIssuer Let's Encrypt |
+| 3 | [03-rancher](docs/03-rancher.md) | Rancher (Helm), login, tuning resource |
+| 4 | [04-9router](docs/04-9router.md) | 9Router: PVC, secret, API key, pakai dari cluster |
+| 5 | [05-postgres](docs/05-postgres.md) | Postgres 16: PVC, Recreate, PGDATA, probe |
+| 6 | [06-backend-laravel](docs/06-backend-laravel.md) | Laravel 12: scaffold, Dockerfile, env, migrate saat start |
+| 7 | [07-frontend-nuxt](docs/07-frontend-nuxt.md) | Nuxt 3 SSR: scaffold, Dockerfile, runtime config |
+| 8 | [08-ingress-tls](docs/08-ingress-tls.md) | Path-split, TLS, redirect http->https & www |
+| 9 | [09-cicd](docs/09-cicd.md) | GitHub Actions + runner self-hosted + GHCR + smoke test |
+| 10 | [10-troubleshooting](docs/10-troubleshooting.md) | seccomp/kill(2), NAT hairpin, SIGPIPE, 419, OOM |
+| 11 | [11-cheatsheet](docs/11-cheatsheet.md) | Perintah harian: logs, rollout, backup, rollback |
+| 12 | [12-domain-dns](docs/12-domain-dns.md) | Domain sendiri, DNS record, Cloudflare, pindah dari sslip.io |
+| 13 | [13-github-setup](docs/13-github-setup.md) | Repo, GHCR, PAT, repo variables, branch protection |
+| 14 | [14-monitoring](docs/14-monitoring.md) | metrics-server, health script, uptime, log |
+| 15 | [15-security-hardening](docs/15-security-hardening.md) | SSH, ufw, RBAC, secret, scan image |
+| 16 | [16-backup-restore](docs/16-backup-restore.md) | Backup harian, drill restore, rencana bencana |
+| 17 | [17-local-dev](docs/17-local-dev.md) | Ngoding di laptop, beda env lokal vs cluster |
+| 18 | [18-skalabilitas](docs/18-skalabilitas.md) | Replika, Redis, multi-node, kapan pindah managed |
+| 19 | [19-verifikasi](docs/19-verifikasi.md) | **Checklist "tahap ini berhasil" + 8 titik gagal tersering** |
+
+## Batas jujur repo ini
+
+Ini panduan infrastruktur yang sudah terbukti di satu VPS, **bukan template aplikasi siap pakai**. Yang kamu isi sendiri: kode Laravel, kode Nuxt, route API, domain, akun GitHub, dan repo aplikasi. Semua langkah + cara verifikasinya ada di docs.
 
 ## Prasyarat
 
