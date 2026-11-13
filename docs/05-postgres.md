@@ -13,7 +13,7 @@ kubectl -n app create secret generic pg-secrets \
   --from-literal=POSTGRES_PASSWORD="$DB_PASS"
 ```
 
-Gunakan namespace yang sama dengan aplikasi (`app` di contoh ini; di repo asli `kabarecing`).
+Gunakan namespace yang sama dengan aplikasi (`app` di contoh ini).
 
 ## 5.2 Deploy
 

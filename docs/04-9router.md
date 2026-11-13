@@ -64,7 +64,29 @@ kubectl -n ai-gateway cp deploy/9router:/app/data/db/data.sqlite /tmp/9r.sqlite 
 sqlite3 /tmp/9r.sqlite "select name, key from apiKeys;"
 ```
 
-## 4.6 Backup
+## 4.6 Pakai dari dalam cluster (Laravel / Nuxt)
+
+Service internal: `http://router-service.ai-gateway.svc.cluster.local:20128`. API key disimpan di secret, bukan di env polos:
+
+```bash
+kubectl -n app create secret generic router-key --from-literal=key='sk-9router-xxxx'
+```
+
+```yaml
+- name: AI_GATEWAY_URL
+  value: http://router-service.ai-gateway.svc.cluster.local:20128
+- name: AI_GATEWAY_KEY
+  valueFrom: {secretKeyRef: {name: router-key, key: key}}
+```
+
+Test dari pod aplikasi (tanpa keluar VPS):
+
+```bash
+kubectl -n app exec deploy/api -- \
+  curl -s $AI_GATEWAY_URL/v1/models -H "Authorization: Bearer $AI_GATEWAY_KEY"
+```
+
+## 4.7 Backup
 
 ```bash
 kubectl -n ai-gateway cp deploy/9router:/app/data/db/data.sqlite \

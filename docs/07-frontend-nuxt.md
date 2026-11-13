@@ -1,5 +1,25 @@
 # 7. Frontend Nuxt 3 (SSR)
 
+## 7.0 Scaffold dari nol
+
+```bash
+npx nuxi@latest init frontend     # pilih npm, SSR: yes
+cd frontend
+npm install
+npm install @nuxtjs/tailwindcss   # opsional
+npm run dev                       # http://localhost:3000
+```
+
+Ambil data API:
+
+```ts
+// app/pages/index.vue
+const config = useRuntimeConfig()
+const { data } = await useFetch(`${config.public.apiBase}/api/articles`)
+```
+
+`useFetch` jalan di server saat SSR **dan** di client saat navigasi — itulah kenapa pod `web` harus bisa menjangkau API (lihat 7.4).
+
 ## 7.1 Dockerfile
 
 [manifests/Dockerfile.frontend](../manifests/Dockerfile.frontend):

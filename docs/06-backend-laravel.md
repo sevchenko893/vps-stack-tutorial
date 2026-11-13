@@ -8,6 +8,28 @@ frontend/           Nuxt 3
 .github/workflows/  CI/CD
 ```
 
+## 6.0 Scaffold dari nol
+
+```bash
+composer create-project laravel/laravel backend
+cd backend
+composer require laravel/sanctum
+php artisan install:api            # bikin routes/api.php + config sanctum
+```
+
+`php artisan install:api` menambahkan middleware `auth:sanctum`, migration token pribadi, dan `routes/api.php`. Setelah itu:
+
+```bash
+php artisan migrate            # butuh DB lokal dulu, atau isi .env ke Postgres di cluster
+php artisan key:generate --show
+```
+
+Untuk pengembangan lokal tanpa cluster:
+
+```bash
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
 ## 6.1 Dockerfile
 
 [backend/Dockerfile](../manifests/Dockerfile.backend) — dua stage:

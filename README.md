@@ -66,10 +66,15 @@ scripts/                  helper idempoten
 ```bash
 bash scripts/install-k3s.sh
 bash scripts/install-cert-manager.sh
-bash scripts/install-rancher.sh
-kubectl apply -f manifests/clusterissuer-letsencrypt.yaml
-kubectl apply -f manifests/9router.yaml
-kubectl create ns app && kubectl apply -f manifests/app/
+VPS_IP=$VPS_IP bash scripts/install-rancher.sh
+export ACME_EMAIL="you@example.com"
+envsubst < manifests/clusterissuer-letsencrypt.yaml | kubectl apply -f -
+envsubst < manifests/9router.yaml | kubectl apply -f -
+kubectl create ns app
+envsubst < manifests/app/10-postgres.yaml | kubectl apply -f -
+envsubst < manifests/app/30-app.yaml | kubectl apply -f -
 ```
+
+`envsubst` (paket `gettext`) mengganti `${VPS_IP}`, `${APP_HOST}`, `${APP_HOST_DOTTED}`, `${ACME_EMAIL}` di manifest.
 
 Sisanya (secret, image, CI/CD) ada di docs — jangan dilewat, urutannya penting.

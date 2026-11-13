@@ -47,7 +47,23 @@ loginctl show-user $USER | grep Linger     # harus Linger=yes
 
 `Linger=yes` wajib, kalau tidak runner mati saat sesi SSH terputus.
 
-## 9.4 Secret & pull secret GHCR
+## 9.4 Variable repo yang dipakai workflow
+
+`build-images.yml` membaca 3 repo variable (Settings -> Secrets and variables -> Actions -> **Variables**), bukan secret — isinya bukan rahasia:
+
+| Variable | Contoh | Dipakai |
+|---|---|---|
+| `PUBLIC_URL` | `https://app.example.com` | build-arg `NUXT_PUBLIC_API_BASE` |
+| `PUBLIC_HOST` | `app.example.com` | smoke test `--resolve` |
+| `NODE_IP` | `10.20.0.38` | IP node untuk `--resolve` |
+
+```bash
+gh variable set PUBLIC_URL  --body "https://app.example.com" -R <owner>/<repo>
+gh variable set PUBLIC_HOST --body "app.example.com"          -R <owner>/<repo>
+gh variable set NODE_IP     --body "10.20.0.38"               -R <owner>/<repo>
+```
+
+## 9.5 Secret & pull secret GHCR
 
 Repo publik di GHCR tetap private by default. Dua hal:
 
@@ -65,7 +81,7 @@ Manifest aplikasi mereferensikannya: `imagePullSecrets: [{name: ghcr-pull}]`.
 
 2. **Push dari Actions** — sudah otomatis via `GITHUB_TOKEN` (`packages: write`). Tidak perlu secret tambahan.
 
-## 9.5 Smoke test yang benar
+## 9.6 Smoke test yang benar
 
 ```bash
 check() {
@@ -86,7 +102,7 @@ Tiga jebakan yang sudah ditangani di snippet itu:
 - `--resolve` untuk NAT hairpin.
 - **jangan** pipe `curl` ke `head`: SIGPIPE membuat curl exit 23 dan job gagal padahal response OK. Simpan ke variabel, lalu `case` untuk cek prefix JSON.
 
-## 9.6 Rollback
+## 9.7 Rollback
 
 ```bash
 kubectl -n app rollout undo deploy/api
@@ -94,6 +110,6 @@ kubectl -n app rollout undo deploy/api
 kubectl -n app set image deploy/api api=ghcr.io/<owner>/<app>-backend:<sha-lama>
 ```
 
-## 9.7 Update manifest dari CI (opsional)
+## 9.8 Update manifest dari CI (opsional)
 
 Kalau ingin `git` jadi sumber kebenaran tag image, tambahkan step `sed`/`yq` yang mengganti tag di `30-app.yaml` lalu commit balik. Untuk satu VPS, `kubectl set image` lebih sedikit moving parts — tidak ada commit loop.
