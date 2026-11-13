@@ -18,10 +18,15 @@ Hasil akhir: 3 aplikasi jalan, TLS otomatis (Let's Encrypt), dan **CI/CD**: `git
 
 Referensi nyata: stack ini dipakai untuk [kabarecing.com](https://kabarecing.com).
 
+## Mulai dari mana?
+
+**Baca [docs/00-urutan-instalasi.md](docs/00-urutan-instalasi.md) dulu** (ringkasan satu halaman: [NOTES.md](NOTES.md)) — urutan langkah, alasannya, estimasi waktu, dan 12 catatan global. Kalau baru pertama kali, ikuti 01 → 09 berurutan. Jangan lompat.
+
 ## Daftar isi
 
 | # | Dokumen | Isi |
 |---|---------|-----|
+| 0 | [docs/00-urutan-instalasi.md](docs/00-urutan-instalasi.md) | **Urutan install + catatan global** |
 | 1 | [docs/01-vps-dan-k3s.md](docs/01-vps-dan-k3s.md) | Siapkan VPS, swap, firewall, install k3s, kubeconfig |
 | 2 | [docs/02-cert-manager.md](docs/02-cert-manager.md) | cert-manager + ClusterIssuer Let's Encrypt |
 | 3 | [docs/03-rancher.md](docs/03-rancher.md) | Install Rancher (Helm), login, tuning resource |
@@ -32,6 +37,13 @@ Referensi nyata: stack ini dipakai untuk [kabarecing.com](https://kabarecing.com
 | 8 | [docs/08-ingress-tls.md](docs/08-ingress-tls.md) | Ingress path-split, TLS, redirect http->https & www |
 | 9 | [docs/09-cicd.md](docs/09-cicd.md) | GitHub Actions + self-hosted runner + GHCR + smoke test |
 | 11 | [docs/11-cheatsheet.md](docs/11-cheatsheet.md) | Perintah harian: logs, rollout, backup, rollback |
+| 12 | [docs/12-domain-dns.md](docs/12-domain-dns.md) | Domain sendiri, DNS record, Cloudflare, pindah dari sslip.io |
+| 13 | [docs/13-github-setup.md](docs/13-github-setup.md) | Repo, GHCR, PAT, repo variables, branch protection |
+| 14 | [docs/14-monitoring.md](docs/14-monitoring.md) | metrics-server, health check script, uptime, log |
+| 15 | [docs/15-security-hardening.md](docs/15-security-hardening.md) | SSH, ufw, RBAC, secret, image, scan |
+| 16 | [docs/16-backup-restore.md](docs/16-backup-restore.md) | Backup harian + drill restore + rencana bencana |
+| 17 | [docs/17-local-dev.md](docs/17-local-dev.md) | Ngoding di laptop, beda env lokal vs cluster |
+| 18 | [docs/18-skalabilitas.md](docs/18-skalabilitas.md) | Naik replika, Redis, multi-node, kapan pindah managed |
 | 10 | [docs/10-troubleshooting.md](docs/10-troubleshooting.md) | seccomp/kill(2), NAT hairpin, SIGPIPE curl, cold start |
 
 ## Prasyarat
