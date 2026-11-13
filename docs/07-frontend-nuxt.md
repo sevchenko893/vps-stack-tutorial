@@ -20,36 +20,6 @@ const { data } = await useFetch(`${config.public.apiBase}/api/articles`)
 
 `useFetch` jalan di server saat SSR **dan** di client saat navigasi — itulah kenapa pod `web` harus bisa menjangkau API (lihat 7.4).
 
-## 7.0 Scaffold project dari nol
-
-```bash
-npx nuxi@latest init frontend
-cd frontend
-npm install
-npm run dev        # http://localhost:3000
-```
-
-`nuxt.config.ts`:
-
-```ts
-export default defineNuxtConfig({
-  runtimeConfig: {
-    public: { apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000' },
-  },
-})
-```
-
-Ambil data dari API:
-
-```vue
-<script setup lang="ts">
-const { public: { apiBase } } = useRuntimeConfig()
-const { data } = await useFetch(`${apiBase}/api/articles`)
-</script>
-```
-
-`useFetch` jalan di **server** saat SSR dan di browser saat navigasi client — itu sebabnya pod `web` harus bisa menjangkau API (lihat 7.4).
-
 ## 7.1 Dockerfile
 
 [manifests/Dockerfile.frontend](../manifests/Dockerfile.frontend):
