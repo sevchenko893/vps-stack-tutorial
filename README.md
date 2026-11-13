@@ -46,7 +46,7 @@ Referensi nyata: stack ini dipakai untuk [kabarecing.com](https://kabarecing.com
 | 17 | [17-local-dev](docs/17-local-dev.md) | Ngoding di laptop, beda env lokal vs cluster |
 | 18 | [18-skalabilitas](docs/18-skalabilitas.md) | Replika, Redis, multi-node, kapan pindah managed |
 | 19 | [19-verifikasi](docs/19-verifikasi.md) | **Checklist "tahap ini berhasil" + 8 titik gagal tersering** |
-| 20 | [20-analytics](docs/20-analytics.md) | GA4 di Nuxt tanpa dependency: plugin, env runtime, verifikasi |
+| 20 | [20-analytics](docs/20-analytics.md) | GA4 + Search Console di Nuxt: plugin, env runtime, robots, sitemap |
 
 ## Batas jujur repo ini
 

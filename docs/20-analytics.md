@@ -1,6 +1,6 @@
-# 20. Google Analytics 4 di Nuxt (tanpa dependency)
+# 20. Analytics & Search Console di Nuxt (tanpa dependency)
 
-Dipakai di kabarecing.com. Satu plugin, satu env var, tanpa `nuxt-gtag` / `@nuxtjs/google-analytics`.
+Dipakai di kabarecing.com. Satu plugin, satu env var, tanpa `nuxt-gtag` / `@nuxtjs/google-analytics`. Bagian GSC ada di 20.8.
 
 ## 20.1 Property GA4 (langkah pemilik akun)
 
@@ -114,3 +114,79 @@ curl -s https://app.example.com/ | grep -c googletagmanager     # harus 0
 Kalau tidak mau data ke Google: Plausible / Umami (self-host, ~100 MB RAM di namespace yang sama).
 Polanya identik: satu plugin, ID dari env, guard kosong. Untuk satu VPS yang sudah menjalankan Rancher,
 Umami + Postgres yang sudah ada lebih hemat daripada menambah layanan analytics berbayar.
+
+## 20.8 Google Search Console
+
+Tiga hal yang dibutuhkan GSC: **verifikasi kepemilikan**, **robots.txt**, dan **sitemap.xml**. Dua terakhir
+juga dipakai mesin pencari lain, jadi jangan skip.
+
+### a. Meta verification dari env
+
+```ts
+// nuxt.config.ts — runtimeConfig.public
+gscVerification: process.env.NUXT_PUBLIC_GSC_VERIFICATION || '',
+siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://example.com',
+```
+
+```vue
+<!-- app/app.vue -->
+<script setup lang="ts">
+const { public: { gscVerification } } = useRuntimeConfig()
+useHead({
+  meta: gscVerification ? [{ name: 'google-site-verification', content: gscVerification }] : [],
+})
+</script>
+```
+
+Token kosong = meta tidak dirender (tidak ada tag sampah di HTML). Isi token lewat
+`kubectl set env deploy/web NUXT_PUBLIC_GSC_VERIFICATION=<token>` — tanpa rebuild image.
+
+### b. robots.txt dinamis
+
+```ts
+// app/server/routes/robots.txt.ts
+export default defineEventHandler((event) => {
+  const { public: { siteUrl } } = useRuntimeConfig(event)
+  setHeader(event, 'Content-Type', 'text/plain; charset=utf-8')
+  return ['User-agent: *', 'Allow: /', 'Disallow: /akun/', 'Disallow: /api/', '', `Sitemap: ${siteUrl}/sitemap.xml`, ''].join('\n')
+})
+```
+
+### c. sitemap.xml dari API
+
+`app/server/routes/sitemap.xml.ts` — route statis + kategori + artikel dari API. Kalau API gagal, tetap
+kirim sitemap statis (jangan 500; GSC menandainya error dan berhenti crawl).
+
+**Penting:** file server route harus di `app/server/routes/` karena `srcDir: 'app/'`. Kalau ditaruh di
+`server/routes/` di root project, Nuxt tidak menemukannya dan rute 404 — sudah kejadian.
+
+### d. Verifikasi
+
+```bash
+curl -s https://example.com/robots.txt              # 200, ada baris Sitemap:
+curl -s https://example.com/sitemap.xml | grep -c '<loc>'
+curl -s https://example.com/ | grep -o 'google-site-verification[^>]*'
+```
+
+Di GSC: **Add property** → **Domain** (butuh DNS TXT) atau **URL prefix** (meta tag / file HTML).
+Untuk cara meta tag: pilih URL prefix → tab **HTML tag** → salin token `content="..."` → isi env → verifikasi.
+
+Property **Domain** lebih kuat (mencakup semua subdomain) tapi butuh akses DNS TXT. Property **URL prefix**
+lebih mudah dan cukup untuk satu hostname.
+
+### e. Setelah terverifikasi
+
+1. **Sitemaps** → submit `https://example.com/sitemap.xml`.
+2. **URL Inspection** → tempel satu artikel → **Request indexing**.
+3. Tunggu 2-3 hari untuk data **Performance** pertama.
+4. **Page indexing** → lihat kalau ada halaman "Crawled - currently not indexed" (biasanya konten tipis).
+
+### f. Jebakan
+
+| Gejala | Sebab |
+|---|---|
+| Verifikasi gagal "tag not found" | meta hanya dirender di client, atau token belum masuk env, atau rollout belum selesai |
+| robots.txt 404 | file di `server/routes/` bukan `app/server/routes/` (srcDir `app/`) |
+| sitemap berisi URL lokal | `NUXT_PUBLIC_SITE_URL` tidak di-set, jatuh ke default |
+| sitemap kosong artikelnya | API tidak bisa dijangkau dari pod (NAT hairpin / baseURL salah) |
+| GSC bilang "Couldn't fetch" | port 80 diblokir, atau `robots.txt` balas 404 |
