@@ -65,14 +65,15 @@ jobs:
           # Cold start SSR bisa >10s -> retry. Jangan pipe curl ke head (SIGPIPE -> exit 23).
           check() {
             for i in $(seq 1 24); do
-              code=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 25 $RESOLVE "https://$HOST$1" || true)
+              # -L: kalau frontend punya redirect (Nuxt routeRules '/'), '/' balas 307, bukan 200.
+              code=$(curl -skL -o /dev/null -w '%{http_code}' --max-time 25 $RESOLVE "https://$HOST$1" || true)
               [ "$code" = "200" ] && return 0
               sleep 5
             done
             echo "$1 returned $code"; return 1
           }
           check /up
-          check /
+          check /          # redirect diikuti (-L), jadi 307 -> 200 tidak dianggap gagal
           # Cek endpoint API milikmu sendiri: set repo variable SMOKE_PATH (mis. /api/articles).
           # Jangan hardcode di sini — project Laravel baru belum punya endpoint itu.
           if [ -n "${SMOKE_PATH:-}" ]; then
